@@ -53,6 +53,7 @@ export default class PhotoUpload extends React.Component {
 
     // get image from image picker
     ImagePicker.showImagePicker(this.options, async response => {
+      try {
       this.setState({buttonDisabled: false})
 
       let rotation = 0 
@@ -89,7 +90,7 @@ export default class PhotoUpload extends React.Component {
       }
       // resize image
       const resizedImageUri = await ImageResizer.createResizedImage(
-        `data:image/jpeg;base64,${response.data}`,
+        response.uri, // `data:image/jpeg;base64,${response.data}`,
         maxHeight,
         maxWidth,
         format,
@@ -99,6 +100,7 @@ export default class PhotoUpload extends React.Component {
 
       if (this.props.onResizedImageUri) this.props.onResizedImageUri(resizedImageUri)
 
+      /*
       const filePath = Platform.OS === 'android' && resizedImageUri.uri.replace
         ? resizedImageUri.uri.replace('file:/data', '/data')
         : resizedImageUri.uri
@@ -112,6 +114,10 @@ export default class PhotoUpload extends React.Component {
 
       // handle photo in props functions as data string
       if (this.props.onPhotoSelect) this.props.onPhotoSelect(photoData)
+      */
+      } catch(err) {
+        if (this.props.onError) this.props.onError(err);
+      }
     })
   }
 
