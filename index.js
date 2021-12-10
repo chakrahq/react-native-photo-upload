@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Platform
 } from 'react-native'
-import ImagePicker from 'react-native-image-picker'
+import { launchCamera } from 'react-native-image-picker'
 import ImageResizer from 'react-native-image-resizer'
 import RNFS from 'react-native-fs'
 
@@ -52,7 +52,7 @@ export default class PhotoUpload extends React.Component {
     if (this.props.onStart) this.props.onStart()
 
     // get image from image picker
-    ImagePicker.showImagePicker(this.options, async response => {
+    launchCamera(this.options, async response => {
       try {
       this.setState({buttonDisabled: false})
 
