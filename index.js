@@ -5,7 +5,8 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  Platform
+  Platform,
+  PermissionsAndroid
 } from 'react-native'
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker'
 import ImageResizer from 'react-native-image-resizer'
@@ -48,7 +49,7 @@ export default class PhotoUpload extends React.Component {
     ...this.props.imagePickerProps
   }
 
-  openImagePicker = () => {
+  openImagePicker = async () => {
     this.setState({buttonDisabled: true})
     if (this.props.onStart) this.props.onStart()
 
@@ -56,6 +57,17 @@ export default class PhotoUpload extends React.Component {
     let launchFn = launchCamera;
     if(this.props.launchImageLibraryFirst) {
       launchFn = launchImageLibrary
+    } else {
+      // ask for android specific permissions
+      if(Platform.OS === 'android') {
+        // camera ask for permissions
+        const cameraPermissionReceived = await requestCameraPermission();
+        if(!cameraPermissionReceived) {
+          console.log("Error: Trying to launch camera without camera permissions");
+          if(this.props.onError) this.props.onError("Please provide camera permissions");
+          return;
+        }
+      }
     }
     launchFn(this.options, async response => {
       try {
@@ -75,7 +87,13 @@ export default class PhotoUpload extends React.Component {
           console.log('ImagePicker Error: ', response.error)
           if (this.props.onError) this.props.onError(response.error)
           return
-        } else if (response.customButton) {
+        } else if (response.errorCode) {
+          console.log('ImagePicker errorCode: ', response.errorCode)
+          console.log('ImagePicker errorMessage: ', response.errorMessage)
+          if (this.props.onError) this.props.onError(response.errorMessage)
+          return
+        } 
+        else if (response.customButton) {
           console.log('User tapped custom button: ', response.customButton)
           if (this.props.onTapCustomButton) this.props.onTapCustomButton(response.customButton)
           return
@@ -94,6 +112,11 @@ export default class PhotoUpload extends React.Component {
           rotation = -90 
         }
         // resize image
+        if(!response.assets || !response.assets.length) {
+          console.log('no assets found in imagepicker response');
+          if (this.props.onError) this.props.onError('no assets found in imagepicker response');
+          return;
+        }
         const [asset0] = response.assets; // FIXME: handles only 1 image
         const resizedImageUri = await ImageResizer.createResizedImage(
           asset0.uri, // `data:image/jpeg;base64,${response.data}`,
@@ -162,3 +185,28 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   }
 })
+
+async function requestCameraPermission () {
+  try {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.CAMERA,
+      {
+        title: "Camera Permission",
+        message: "Chakra needs to access your camera",
+        buttonNeutral: "Ask Me Later",
+        buttonNegative: "Cancel",
+        buttonPositive: "OK"
+      }
+    );
+    if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+      console.log("Camera permission given");
+      return true;
+    } else {
+      console.log("Camera permission denied");
+      return false;
+    }
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+};
