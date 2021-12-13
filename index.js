@@ -13,7 +13,7 @@ import RNFS from 'react-native-fs'
 
 export default class PhotoUpload extends React.Component {
   static propTypes = {
-    launchImageLibraryFirst: PropTypes.boolean,
+    launchImageLibraryFirst: PropTypes.bool,
     containerStyle: PropTypes.object,
     photoPickerTitle: PropTypes.string,
     maxHeight: PropTypes.number,
