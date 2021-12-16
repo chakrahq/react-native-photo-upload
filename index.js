@@ -6,7 +6,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
-  PermissionsAndroid
+  PermissionsAndroid,
+  Modal,
+  Pressable,
+  Text
 } from 'react-native'
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker'
 import ImageResizer from 'react-native-image-resizer'
@@ -14,7 +17,6 @@ import RNFS from 'react-native-fs'
 
 export default class PhotoUpload extends React.Component {
   static propTypes = {
-    launchImageLibraryFirst: PropTypes.bool,
     containerStyle: PropTypes.object,
     photoPickerTitle: PropTypes.string,
     maxHeight: PropTypes.number,
@@ -37,7 +39,8 @@ export default class PhotoUpload extends React.Component {
     maxWidth: this.props.width || 600,
     format: this.props.format || 'JPEG',
     quality: this.props.quality || 100,
-    buttonDisabled: false
+    buttonDisabled: false,
+    modalVisible: false
   }
 
   options = {
@@ -49,13 +52,22 @@ export default class PhotoUpload extends React.Component {
     ...this.props.imagePickerProps
   }
 
-  openImagePicker = async () => {
-    this.setState({buttonDisabled: true})
+  closeModal = async () => {
+    this.setState({ modalVisible: false });
+  }
+
+  openModal = async () => {
+    this.setState({ modalVisible: true });
+  }
+
+  openImagePicker = async (camera = true) => {
+    this.closeModal();
+    this.setState({ buttonDisabled: true });
     if (this.props.onStart) this.props.onStart()
 
     // get image from image picker
     let launchFn = launchCamera;
-    if(this.props.launchImageLibraryFirst) {
+    if(!camera) {
       launchFn = launchImageLibrary
     } else {
       // ask for android specific permissions
@@ -165,14 +177,36 @@ export default class PhotoUpload extends React.Component {
   }
 
   render() {
+    const { modalVisible } = this.state;
     return (
       <View style={[styles.container, this.props.containerStyle]}>
         <TouchableOpacity
-          onPress={this.openImagePicker}
+          onPress={this.openModal}
           disabled={this.state.buttonDisabled}
         >
           {this.renderChildren(this.props)}
         </TouchableOpacity>
+        <Modal
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => {
+            this.closeModal();
+          }}
+        >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Pressable style={styles.textButton} onPress={() => this.openImagePicker(true)}>
+                <Text style={styles.textOption}>Open Camera</Text>
+              </Pressable>
+              <Pressable style={styles.textOption}style={styles.textButton} onPress={() => this.openImagePicker(false)}>
+                <Text style={styles.textOption}>Open Gallery</Text>
+              </Pressable>
+              <Pressable style={styles.textButton} onPress={() => this.closeModal()}>
+                <Text style={styles.cancelOption}>Cancel</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
       </View>
     )
   }
@@ -183,8 +217,46 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center'
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22
+  },
+  modalView: {
+    minWidth: 250,
+    margin: 20,
+    borderRadius: 4,
+    padding: 10,
+    backgroundColor: "#fefefe",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 3,
+      height: 9
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5
+  },
+  textButton: {
+    alignSelf: "stretch",
+    textAlign: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 15,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#efefef'
+  },
+  textOption: {
+    fontWeight: 'bold'
+  },
+  cancelOption: {
+
   }
-})
+});
 
 async function requestCameraPermission () {
   try {
