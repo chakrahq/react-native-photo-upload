@@ -60,8 +60,7 @@ export default class PhotoUpload extends React.Component {
     this.setState({ modalVisible: true });
   }
 
-  openImagePicker = async (camera = true) => {
-    this.closeModal();
+  performLaunchAction = async (camera) => {
     this.setState({ buttonDisabled: true });
     if (this.props.onStart) this.props.onStart()
 
@@ -160,6 +159,23 @@ export default class PhotoUpload extends React.Component {
         if (this.props.onError) this.props.onError(err);
       }
     })
+  }
+
+  openImagePicker = async (camera = true) => {
+    const _this = this;
+    try {
+      this.closeModal();
+      // NOTE: the settimeout is needed because of a weird issue - where closing the modal
+      // and launching the gallery doesnt work 
+      // Ref: https://github.com/react-native-image-picker/react-native-image-picker/issues/728
+      // Future Fix - move away from modal to some native action modal
+      setTimeout(async () => {
+        await this.performLaunchAction(camera);
+      }, 100);
+    } catch(err) {
+      console.log(err);
+      if (this.props.onError) this.props.onError(err);
+    }
   }
 
   renderChildren = props => {
